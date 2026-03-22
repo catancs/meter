@@ -22,8 +22,6 @@ export function ensureConfigDefaults(
 ): MeterConfig {
   return {
     version: 1,
-    mode: partial.mode,
-    resolved_binaries: partial.resolved_binaries,
     org_id: partial.org_id,
     budget: {
       per_task_usd: DEFAULT_CONFIG_VALUES.budget_per_task_usd,

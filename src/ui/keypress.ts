@@ -12,7 +12,7 @@ export function waitForKeypress(
 
     const timer = timeoutMs > 0
       ? setTimeout(() => { cleanup(); resolve('timeout') }, timeoutMs)
-      : null
+      : undefined
 
     const onData = (data: Buffer) => {
       const key = data.toString().toLowerCase().trim() as KeypressAction
