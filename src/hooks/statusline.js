@@ -2,35 +2,49 @@
 /**
  * meter — Statusline command for Claude Code
  *
- * Reads the latest estimation from ~/.meter/cache/latest-estimate.json
- * and outputs a formatted status string for Claude Code's bottom bar.
+ * Shows two things:
+ * 1. The latest estimation (from on-prompt.js) — what the current prompt is expected to cost
+ * 2. Session actuals (from on-stop.js) — what you've actually spent this session
+ *
+ * Output format: meter ~$0.09 medium | session $0.47 (5) | last $0.12
  */
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
-const ESTIMATE_FILE = path.join(os.homedir(), '.meter', 'cache', 'latest-estimate.json');
+const CACHE_DIR = path.join(os.homedir(), '.meter', 'cache');
+const ESTIMATE_FILE = path.join(CACHE_DIR, 'latest-estimate.json');
+const SESSION_FILE = path.join(CACHE_DIR, 'session-costs.json');
 
 try {
-  if (!fs.existsSync(ESTIMATE_FILE)) {
+  const parts = [];
+
+  // Part 1: Latest estimation
+  try {
+    const est = JSON.parse(fs.readFileSync(ESTIMATE_FILE, 'utf-8'));
+    const age = Date.now() - (est.timestamp || 0);
+    if (age < 600_000) {
+      parts.push(`~$${est.cost.toFixed(2)} ${est.complexity}`);
+    }
+  } catch {}
+
+  // Part 2: Session actuals
+  try {
+    const session = JSON.parse(fs.readFileSync(SESSION_FILE, 'utf-8'));
+    const age = Date.now() - (session.last_activity || 0);
+    if (age < 1_800_000 && session.prompts > 0) {
+      parts.push(`session $${session.total_cost.toFixed(2)} (${session.prompts})`);
+      if (session.last_cost > 0) {
+        parts.push(`last $${session.last_cost.toFixed(2)}`);
+      }
+    }
+  } catch {}
+
+  if (parts.length === 0) {
     process.stdout.write('meter: ready');
-    process.exit(0);
+  } else {
+    process.stdout.write('meter ' + parts.join(' | '));
   }
-
-  const data = JSON.parse(fs.readFileSync(ESTIMATE_FILE, 'utf-8'));
-  const age = Date.now() - (data.timestamp || 0);
-
-  // If estimate is older than 10 minutes, show stale indicator
-  if (age > 600_000) {
-    process.stdout.write('meter: idle');
-    process.exit(0);
-  }
-
-  const cost = data.cost != null ? `~$${data.cost.toFixed(2)}` : '?';
-  const complexity = data.complexity || '?';
-  const prompt = (data.prompt || '').slice(0, 30);
-
-  process.stdout.write(`meter ${cost} ${complexity} │ ${prompt}`);
 } catch {
   process.stdout.write('meter: ready');
 }

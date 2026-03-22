@@ -84,7 +84,7 @@ async function installClaudeHooks(meterDir: string): Promise<void> {
 
   // Copy hook scripts to ~/.meter/hooks/
   const srcDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'hooks')
-  for (const file of ['on-prompt.js', 'statusline.js']) {
+  for (const file of ['on-prompt.js', 'on-stop.js', 'statusline.js']) {
     try {
       await copyFile(join(srcDir, file), join(hooksDir, file))
       await chmod(join(hooksDir, file), 0o755)
@@ -123,6 +123,21 @@ async function installClaudeHooks(meterDir: string): Promise<void> {
         hooks: [{ type: 'command', command: meterHookCommand }]
       })
       console.log('✓ Added meter estimation hook to Claude Code')
+    }
+
+    // Add Stop hook for post-response cost tracking
+    const meterStopCommand = `node "${join(hooksDir, 'on-stop.js')}"`
+    if (!settings.hooks.Stop) settings.hooks.Stop = []
+
+    const alreadyHasStopHook = settings.hooks.Stop.some((h: any) =>
+      h.hooks?.some((hh: any) => hh.command?.includes('meter'))
+    )
+
+    if (!alreadyHasStopHook) {
+      settings.hooks.Stop.push({
+        hooks: [{ type: 'command', command: meterStopCommand }]
+      })
+      console.log('✓ Added meter cost tracking hook to Claude Code')
     }
 
     // Add/update statusline command
