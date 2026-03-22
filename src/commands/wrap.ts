@@ -122,6 +122,27 @@ export async function runWrap(args: string[]): Promise<void> {
     }, 15_000)
   }
 
+  // Per-prompt estimation: when user submits a new prompt inside the interactive
+  // session, re-run the estimation pipeline and update the status bar
+  let lastPrompt = prompt // initial prompt from CLI args
+  wrapper.on('input', async (newPrompt: string) => {
+    lastPrompt = newPrompt
+    const newEstimation = await runEstimationPipeline({
+      prompt: newPrompt,
+      repoFileCount,
+      db,
+      repo,
+      config: config.estimation,
+    })
+    state.estimatedCost = newEstimation.estimated_cost
+    state.complexity = newEstimation.complexity as Complexity
+    // Reset elapsed cost for the new prompt
+    state.elapsedCost = 0
+    thresholdNotified = false
+    statusBarShown = false // allow fallback mode to re-print
+    updateBar()
+  })
+
   wrapper.on('data', (chunk: string) => {
     outputBuffer += chunk
     // Rough running cost estimate from output volume
@@ -188,13 +209,14 @@ export async function runWrap(args: string[]): Promise<void> {
 
   // Parse final token counts
   const tokens = parseTokensFromOutput(outputBuffer)
-  const promptHash = createHash('sha256').update(prompt.toLowerCase().trim()).digest('hex').slice(0, 16)
+  const finalPrompt = lastPrompt || prompt
+  const promptHash = createHash('sha256').update(finalPrompt.toLowerCase().trim()).digest('hex').slice(0, 16)
 
   insertTask(db, {
     created_at: taskStart,
     repo,
     prompt_hash: promptHash,
-    prompt_text: prompt,
+    prompt_text: finalPrompt,
     model: state.model,
     complexity: estimation.complexity as Complexity,
     est_layer: estimation.layer_used,

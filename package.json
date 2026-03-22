@@ -1,6 +1,6 @@
 {
   "name": "meter-ai",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "Intelligent CLI wrapper for Claude Code — pre-task cost estimation, live status bar, budget protection",
   "bin": {
     "meter": "dist/index.js"
