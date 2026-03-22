@@ -82,12 +82,23 @@ export async function runWrap(args: string[]): Promise<void> {
   let thresholdNotified = false
   let modelSwitched = 0
 
-  // Status bar update function
+  // Status bar update function — adapts to PTY vs fallback mode
+  let statusBarShown = false
   const updateBar = () => {
     if (wrapper.isInAlternateScreen) return
     const content = renderStatusBar(state)
-    const N = calculateStatusBarLines(content.replace(/\x1b\[[^m]*m/g, '').length, process.stdout.columns ?? 80)
-    injectStatusBar(content, N)
+
+    if (wrapper.usingFallback) {
+      // Fallback mode: only show status bar once as a header, then on threshold
+      if (!statusBarShown) {
+        process.stdout.write(content + '\n')
+        statusBarShown = true
+      }
+    } else {
+      // PTY mode: inject at fixed position via escape codes
+      const N = calculateStatusBarLines(content.replace(/\x1b\[[^m]*m/g, '').length, process.stdout.columns ?? 80)
+      injectStatusBar(content, N)
+    }
   }
 
   // Watch for credential refresh
