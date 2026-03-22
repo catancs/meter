@@ -1,0 +1,33 @@
+{
+  "name": "meter-ai",
+  "version": "0.1.0",
+  "description": "Intelligent CLI wrapper for Claude Code — pre-task cost estimation, live status bar, budget protection",
+  "bin": {
+    "meter": "./dist/index.js"
+  },
+  "main": "./dist/index.js",
+  "type": "module",
+  "engines": { "node": ">=20.0.0" },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "tsx src/index.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": ["claude", "ai", "cost", "cli", "agent"],
+  "license": "MIT",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
+    "ansi-escapes": "^7.0.0",
+    "better-sqlite3": "^11.0.0",
+    "node-pty": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.0",
+    "@types/node": "^20.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.4.0",
+    "vitest": "^2.0.0"
+  }
+}
